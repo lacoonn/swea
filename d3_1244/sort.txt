@@ -1,0 +1,87 @@
+// d3_1244.cpp: 콘솔 응용 프로그램의 진입점을 정의합니다.
+//
+
+#include <iostream>
+#include <sstream>
+#include <string.h>
+
+using namespace std;
+
+int compare(const void *a, const void *b)
+{
+	return strcmp((char *)b, (char *)a);
+}
+
+int main()
+{
+	int case_num, case_count = 0;
+	cin >> case_num;
+
+	while (case_count < case_num) {
+		int number_board, swap_num;
+		cin >> number_board >> swap_num;
+
+		// 완전탐색으로 풀자(dfs?)
+		// 교환 횟수가 끝나는 시점에서 현재 점수와 비교해서 크면 교체
+		// 숫자 그대로 넘겨서 메모리 펑펑쓰는걸로
+		int current_max = number_board;; // 최소점수는 현재 점수
+
+		stringstream ss;
+		ss << number_board;
+		string board = ss.str();
+		
+		char best_board[100];
+		strcpy_s(best_board, board.c_str());
+
+		qsort(best_board, board.length(), sizeof(char), compare);
+		//cout << best_board << endl;
+
+		// (1)왼쪽에서 퀵소팅 결과와 비교하면서 다르면
+		// (2)오른쪽에서 탐색하여 비교 결과와 같은 숫자를 스왑한다.
+		// 이것을 swap_num만큼 반복한다.
+
+		char cboard[100];
+		strcpy_s(cboard, board.c_str());
+
+		while (swap_num > 0) {
+			bool isSwaped = false;
+
+			// (1)
+			for (int i = 0; i < board.length(); i++) {
+				if (best_board[i] != cboard[i]) {
+					// (2)
+					for (int j = board.length() - 1; j > i; j--) {
+						if (cboard[j] == best_board[i]) {
+							swap(cboard[j], cboard[i]);
+							
+							isSwaped = true;
+						}
+					}
+
+					// 반복문 종료
+					break;
+				}
+
+			}
+			// 이미 best case라서 교환하고 싶지 않더라도 반드시 무언가는 교환해야한다.
+			// 따라서 가장 오른쪽 두개를 교환한다.
+			if (isSwaped == false) {
+				swap(cboard[board.length() - 1], cboard[board.length() - 2]);
+			}
+
+			// swap_num만큼 반복
+			swap_num--;
+		}
+
+		current_max = atoi(cboard);
+
+		cout << "#" << case_count + 1 << " " << current_max << endl;
+
+		// 케이스 카운트 증가
+		case_count++;
+	}
+
+
+	return 0;
+}
+
