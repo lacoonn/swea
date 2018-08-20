@@ -1,0 +1,158 @@
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <cstdio>
+#include <algorithm>
+#include <vector>
+
+using namespace std;
+
+struct dir {
+	int inc_i, inc_j;
+	dir(int i, int j) :inc_i(i), inc_j(j) {}
+};
+int table[20][20];
+bool check[101];
+vector<int>result;
+
+// 남서 방향으로 이동된 점에서 사각형 탐색
+// N, (시작 좌표), (남서쪽으로 이동된 좌표), 현재 길이
+int cross_path_second(int n, int si_1, int sj_1, int si_2, int sj_2, int til) {
+	int ni_1, nj_1, ni_2, nj_2;
+	int sum_1 = 1, sum_2;
+	// 인자로 얻은 두 좌표에서 남동쪽으로 이동
+	while (1) {
+		// 시작 좌표에서 남동쪽으로 이동
+		ni_1 = si_1 + sum_1;
+		nj_1 = sj_1 + sum_1;
+		// 남서쪽으로 이동된 좌표에서 남동쪽으로 이동
+		ni_2 = si_2 + sum_1;
+		nj_2 = sj_2 + sum_1;
+		// 이동된 좌표가 지도 밖으로 이탈하면 종료
+		if (ni_1 < 0 || ni_1 >= n || nj_1 < 0 || nj_1 >= n)
+			break;
+		else if (ni_2 < 0 || ni_2 >= n || nj_2 < 0 || nj_2 >= n)
+			break;
+		// 각 좌표의 디저트 종류
+		int ntype1 = table[ni_1][nj_1];
+		int ntype2 = table[ni_2][nj_2];
+		// (시작 좌표)&(남서쪽으로 이동된 좌표) 의 이동된 좌표의 디저트가 같다면 종료
+		if (ntype1 == ntype2)
+			break;
+		// 둘 중 하나라도 이미 지나간 경로상에 있다면 종료
+		if (check[ntype1] || check[ntype2])
+			break;
+		// 두 좌표의 디저트를 경로에 체크
+		check[ntype1] = check[ntype2] = true;
+		// 여기까지 전부 통과했다면 각 좌표에서 남동쪽으로 +1해서 체크
+		sum_1++;
+	}
+	// 정상적으로 종료되었는지 여부
+	bool pos = false;
+	// 남동쪽으로 이동이 중지되었다면 남은 한 변을 체크
+	while (sum_1-- > 1) {
+		// 마지막으로 적절했던 좌표로 이동
+		ni_1--;
+		nj_1--;
+		ni_2--;
+		nj_2--;
+		// 정상적으로 종료될 때까지(pos) 반복
+		if (!pos) {
+			sum_2 = 0;
+			// 남서쪽으로 이동된 좌표에서 다시 이동된 좌표
+			int ti = ni_2, tj = nj_2;
+			while (1) {
+				// 북동쪽으로 이동
+				ti--;
+				tj++;
+				// 시작점에서 이동된 좌표를 만나면 정상적으로 종료 -> pos를 true로 변경
+				if (ti == ni_1) {
+					pos = true;
+					break;
+				}
+				// 현재 좌표의 디저트 가게가 지나간 경로 상에 있으면 종료
+				else if (check[table[ti][tj]])
+					break;
+				// 지나간 경로에 디저트를 체크
+				check[table[ti][tj]] = true;
+				// 남은 한 변 길이 증가
+				sum_2++;
+			}
+			// 정상적으로 종료되었다면 최종 길이 계산
+			if (pos)
+				til += (2 * sum_1 + sum_2);
+			// 이동된 좌표를 다시 남서쪽으로 돌림
+			while (1) {
+				ti++;
+				tj--;
+				// 북동쪽으로 이동하기 전으로 돌아가면 종료
+				if (ti == ni_2)
+					break;
+				// 지나간 경로에서 디저트 삭제
+				check[table[ti][tj]] = false;
+			}
+		}
+		// 정상적으로 종료하지 못했다면 현재 좌표의 디저트를 지나간 경로에서 제거
+		check[table[ni_1][nj_1]] = false;
+		check[table[ni_2][nj_2]] = false;
+	}
+	return til;
+}
+
+// 지도 상의 각 점에서 남서 방향으로 이동 시작
+int cross_path_first(int n, int si, int sj) {
+	fill(check, check + 101, false);
+	int MAX = -1;
+	int til = 1;
+	// 이동하는 좌표
+	int ni, nj;
+	// 현재 좌표의 디저트를 지나간 경로에 체크
+	check[table[si][sj]] = true;
+
+	while (1) {
+		// 시작점 기준 남서쪽 방향으로 이동
+		ni = si + til;
+		nj = sj - til;
+		// 지도 밖으로 벗어나면 중지
+		if (ni < 0 || ni >= n || nj < 0 || nj >= n)
+			break;
+		// 지나간 경로에 존재하는 디저트이면 중지
+		else if (check[table[ni][nj]])
+			break;
+		// 디저트 체크
+		check[table[ni][nj]] = true;
+		// 남서 방향으로 +1 이동
+		til++;
+		// 현재 이동된 좌표에서 사각형 탐색
+		int tmp_res = cross_path_second(n, si, sj, ni, nj, til);
+		// 결과가 최대길이인지 확인
+		if (tmp_res != til) {
+			if (MAX < tmp_res)
+				MAX = tmp_res;
+		}
+	}
+	return MAX;
+}
+int main(void) {
+	freopen("sample_input.txt", "r", stdin);
+
+	int T, n;
+	int MAX;
+	scanf("%d", &T);
+	while (T-- > 0) {
+		scanf("%d", &n);
+		MAX = -1;
+		for (int i = 0; i < n; i++)
+			for (int j = 0; j < n; j++)
+				scanf("%d", &table[i][j]);
+		for (int i = 0; i < (n - 2); i++)
+			for (int j = 1; j < (n - 1); j++) {
+				int tmp_res = cross_path_first(n, i, j);
+				if (tmp_res > MAX)
+					MAX = tmp_res;
+			}
+		result.push_back(MAX);
+	}
+	for (int i = 0; i < (int)result.size(); i++)
+		printf("#%d %d\n", i + 1, result[i]);
+	return 0;
+}
